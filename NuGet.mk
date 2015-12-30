@@ -4,7 +4,7 @@ MONO ?= env mono
 NUGETDIR ?= lib/NuGet/
 TOOLSDIR ?= tools/
 
-NUGET = $(TOOLSDIR)nuget/NuGet.exe
+NUGET ?= $(TOOLSDIR)nuget/NuGet.exe
 
 .PHONY: all
 all: install_nuget
