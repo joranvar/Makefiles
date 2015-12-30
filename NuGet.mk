@@ -21,6 +21,10 @@ realclean: clean_nuget
 .PHONY: install_nuget
 install_nuget: $(NUGET)
 
+.PHONY: clean_nuget
+clean_nuget:
+	-$(RM) $(NUGET)
+
 $(NUGET): | $(dir $(NUGET))
 	$(CURL) -SsL https://www.nuget.org/nuget.exe -o $@
 
