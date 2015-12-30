@@ -28,9 +28,11 @@ clean_nuget:
 $(NUGET): | $(dir $(NUGET))
 	$(CURL) -SsL https://www.nuget.org/nuget.exe -o $@
 
+nuget = $(addprefix $(NUGETDIR)$(1)/,$(1).nupkg $(2))
+
 # Nuget dependency template
-%.nupkg: PKGNAME = $(basename $(firstword $(subst /, ,$@)))
-%.nupkg: VERSION = $(basename $(word 2,$(subst /, ,$@)))
+%.nupkg: PKGNAME = $(basename $(word 2,$(subst /, ,$(subst $(NUGETDIR),,$@))))
+%.nupkg: VERSION = $(basename $(word 3,$(subst /, ,$(subst $(NUGETDIR),,$@))))
 %.nupkg: | $(NUGET)
 	[ -d $(NUGETDIR)$(PKGNAME) ] || \
 		$(MONO) $(NUGET) install $(PKGNAME) \
