@@ -27,7 +27,7 @@ $(TESTDIR)%.sql.success: %_run_test.sql
 	-@$(call cat_combined_with_go,$(SETUP)) | $(CC.sql) $(SQSH_FLAGS) -D$(DB_NAME) -mnone -Lsemicolon_hack=0
 	@echo "Running:" $(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)
 	-@$(call cat_combined_with_go,$(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)) \
-		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D$(DB_NAME) -e -Lsemicolon_hack=0 \
+		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D$(DB_NAME) -Lsemicolon_hack=0 \
 		| diff - $(EXPECT) && touch $@
 	@echo "Cleanup from files:" $(CLEANUP)
 	-@$(call cat_combined_with_go,$(CLEANUP)) | $(CC.sql) $(SQSH_FLAGS) -D$(DB_NAME) -mnone -Lsemicolon_hack=0
@@ -43,6 +43,6 @@ $(TESTDIR)%_expect.out: %_run_test.sql
 	-@$(call cat_combined_with_go,$(SETUP)) | $(CC.sql) $(SQSH_FLAGS) -D$(DB_NAME) -mnone -Lsemicolon_hack=0
 	@echo "Running:" $(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)
 	-@$(call cat_combined_with_go,$(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)) \
-		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D$(DB_NAME) -e -Lsemicolon_hack=0 -o $@
+		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D$(DB_NAME) -Lsemicolon_hack=0 -o $@
 	@echo "Cleanup from files:" $(CLEANUP)
 	-@$(call cat_combined_with_go,$(CLEANUP)) | $(CC.sql) $(SQSH_FLAGS) -D$(DB_NAME) -mnone -Lsemicolon_hack=0
