@@ -22,11 +22,17 @@ realclean: clean_nuget
 install_nuget: $(NUGET)
 
 .PHONY: clean_nuget
+ifndef nuget
 clean_nuget:
 	-$(RM) $(NUGET)
 
 $(NUGET): | $(dir $(NUGET))
 	$(CURL) -SsL https://www.nuget.org/nuget.exe -o $@
+
+.PHONY: nugetclean
+nugetclean:
+	$(RM) -r $(NUGETDIR)
+endif
 
 nuget = $(addprefix $(NUGETDIR)$(1)/,$(1).nupkg $(2))
 
@@ -40,10 +46,6 @@ nuget = $(addprefix $(NUGETDIR)$(1)/,$(1).nupkg $(2))
 		-OutputDirectory $(NUGETDIR) \
 		-Verbosity quiet \
 		$(if $(VERSION),-Version $(VERSION))
-
-.PHONY: nugetclean
-nugetclean:
-	$(RM) -r $(NUGETDIR)
 
 # How to make a directory
 %/:
