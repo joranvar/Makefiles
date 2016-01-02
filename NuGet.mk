@@ -37,10 +37,10 @@ endif
 nuget = $(addprefix $(NUGETDIR)$(1)/,$(1).nupkg $(2))
 
 # Nuget dependency template
-%.nupkg: PKGNAME = $(basename $(word 2,$(subst /, ,$(subst $(NUGETDIR),,$@))))
-%.nupkg: VERSION = $(basename $(word 3,$(subst /, ,$(subst $(NUGETDIR),,$@))))
+%.nupkg: PKGNAME = $(basename $(word 1,$(subst /, ,$(subst $(NUGETDIR),,$@))))
+%.nupkg: VERSION = $(basename $(word 4,$(subst /, ,$(subst $(NUGETDIR),,$@))))
 %.nupkg: | $(NUGET)
-	[ -d $(NUGETDIR)$(PKGNAME) ] || \
+	-[ -d $(NUGETDIR)$(PKGNAME) ] || \
 		$(MONO) $(NUGET) install $(PKGNAME) \
 		-ExcludeVersion \
 		-OutputDirectory $(NUGETDIR) \
