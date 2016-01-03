@@ -18,7 +18,7 @@ define SQL_mkDatabaseRule =
  $(SQL_dbDir)/$(1).db:
 	mkdir -p $$(@D)
 	@$(SQL_startServer)
-	-$(call SQL_runCommand,master,DROP DATABASE [$(1)])
+	$(call SQL_runCommand,master,DROP DATABASE [$(1)]) || true
 	$(call SQL_runCommand,master,CREATE DATABASE [$(1)])
 	$(call SQL_runScripts,$(1),$$(filter %.sql,$$^)) -o$$@ || (cat $$@ && touch -dyesterday $$@ && exit 1)
  $(SQL_dbDir)/$(1).db_defined = 1
