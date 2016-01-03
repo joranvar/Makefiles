@@ -24,3 +24,18 @@ define TEST_mkCompareRule =
  $(TEST_testDir)/$(1).success_defined = 1
 endif
 endef
+
+### Default targets
+.PHONY: cleanall
+cleanall: TEST_clean
+
+.PHONY: TEST_clean
+TEST_clean: TEST_cleansuccess TEST_cleanexpected
+
+.PHONY: TEST_cleansuccess
+TEST_cleansuccess:
+	rm -f $(patsubst %_defined,%,$(filter %.success_defined,$(.VARIABLES)))
+
+.PHONY: TEST_cleanexpected
+TEST_cleanexpected:
+	rm -f $(patsubst %.success_defined,%.expected,$(filter %.success_defined,$(.VARIABLES)))
