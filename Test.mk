@@ -22,7 +22,7 @@ define TEST_mkCompareRule =
 	mkdir -p $(dir $(2))
 	cat $(1) > $(2)
  $(TEST_testDir)/$(1).success_defined = 1
-endif
+ endif
 endef
 
 ### Default targets
