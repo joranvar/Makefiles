@@ -1,48 +1,46 @@
-SQLSTART ?= echo "Starting SQL"
-SQSH_FLAGS ?=
-SQSH_OUTPUT_FLAGS ?= -mcsv
-CC.sql ?= env sqsh
-OUTDIR ?= bin/
-TESTDIR ?= test/
+SQL_startServer ?= # NOOP e.g. cd ~/git/vagrant-boxes && vagrant up # must be idempotent
+SQL_sqshFlags   ?= #      e.g. -S localhost:1433 -U sa -P vagrant -G 7.0
+SQL_dbDir       ?= db
+SQL_sqsh	?= env sqsh
 
-$(OUTDIR)%.db: DB_NAME = $(notdir $(basename $@))
-$(OUTDIR)%.db: create_%.sql
-	mkdir -p $(@D)
-	$(SQLSTART)
-	-$(CC.sql) $(SQSH_FLAGS) -C"DROP DATABASE [$(DB_NAME)];"
-	$(CC.sql) $(SQSH_FLAGS) -C"CREATE DATABASE [$(DB_NAME)];"
-	$(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D"[$(DB_NAME)]" $(addprefix -i,$^) -e -o$@
+### Functions
+define SQL_mkDatabaseTarget = # database_name
+$(eval $(call SQL_mkDatabaseRule,$(1)))$(SQL_dbDir)/$(1).db
+endef
 
-cat_combined_with_go = for i in $(1); do cat $$i; echo "go"; done
+define SQL_mkScriptSetTarget = # database_name,scriptset_name
+$(eval $(call SQL_mkScriptSetRule,$(1),$(2)))$(addsuffix .out,$(addprefix $(SQL_dbDir)/$(1)/,$(2)))
+endef
 
-$(TESTDIR)%.sql.success: DB_NAME   = $(firstword $(subst /, ,$(subst $(TESTDIR),,$@)))
-$(TESTDIR)%.sql.success: TEST_NAME = $(*F)
-$(TESTDIR)%.sql.success: SETUP     = $(wildcard $(<D)/$(TEST_NAME)_setup*.sql)
-$(TESTDIR)%.sql.success: CLEANUP   = $(wildcard $(<D)/$(TEST_NAME)_cleanup*.sql)
-$(TESTDIR)%.sql.success: EXPECT    = $(<D)/$(TEST_NAME)_expect.out
-$(TESTDIR)%.sql.success: %_run_test.sql
-	make $(OUTDIR)$(DB_NAME).db
-	@echo "Running test:" $(TEST_NAME)
-	@echo "Setup from files:" $(SETUP)
-	-@$(call cat_combined_with_go,$(SETUP)) | $(CC.sql) $(SQSH_FLAGS) -D"[$(DB_NAME)]" -mnone -Lsemicolon_hack=0
-	@echo "Running:" $(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)
-	-@$(call cat_combined_with_go,$(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)) \
-		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D"[$(DB_NAME)]" -Lsemicolon_hack=0 \
-		| diff - $(EXPECT) && touch $@
-	@echo "Cleanup from files:" $(CLEANUP)
-	-@$(call cat_combined_with_go,$(CLEANUP)) | $(CC.sql) $(SQSH_FLAGS) -D"[$(DB_NAME)]" -mnone -Lsemicolon_hack=0
+### Target templates
+define SQL_mkDatabaseRule =
+ ifndef $(SQL_dbDir)/$(1).db_defined
+ $(SQL_dbDir)/$(1).db:
+	mkdir -p $$(@D)
+	@$(SQL_startServer)
+	-$(call SQL_runCommand,master,DROP DATABASE [$(1)])
+	$(call SQL_runCommand,master,CREATE DATABASE [$(1)])
+	$(call SQL_runScripts,$(1),$$(filter %.sql,$$^)) -o$$@ || (cat $$@ && touch -dyesterday $$@ && exit 1)
+ $(SQL_dbDir)/$(1).db_defined = 1
+ endif
+endef
 
-$(TESTDIR)%_expect.out: DB_NAME   = $(firstword $(subst /, ,$(subst $(TESTDIR),,$@)))
-$(TESTDIR)%_expect.out: TEST_NAME = $(*F)
-$(TESTDIR)%_expect.out: SETUP     = $(wildcard $(<D)/$(TEST_NAME)_setup*.sql)
-$(TESTDIR)%_expect.out: CLEANUP   = $(wildcard $(<D)/$(TEST_NAME)_cleanup*.sql)
-$(TESTDIR)%_expect.out: %_run_test.sql
-	make $(OUTDIR)$(DB_NAME).db
-	@echo "Creating expected data for test:" $(TEST_NAME)
-	@echo "Setup from files:" $(SETUP)
-	-@$(call cat_combined_with_go,$(SETUP)) | $(CC.sql) $(SQSH_FLAGS) -D"[$(DB_NAME)]" -mnone -Lsemicolon_hack=0
-	@echo "Running:" $(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)
-	-@$(call cat_combined_with_go,$(filter-out %run_test.sql,$^) $(filter %run_test.sql,$^)) \
-		| $(CC.sql) $(SQSH_FLAGS) $(SQSH_OUTPUT_FLAGS) -D"[$(DB_NAME)]" -Lsemicolon_hack=0 -o $@
-	@echo "Cleanup from files:" $(CLEANUP)
-	-@$(call cat_combined_with_go,$(CLEANUP)) | $(CC.sql) $(SQSH_FLAGS) -D"[$(DB_NAME)]" -mnone -Lsemicolon_hack=0
+define SQL_mkScriptSetRule =
+ ifndef $(SQL_dbDir)/$(1)/$(2).out_defined
+ $(SQL_dbDir)/$(1)/$(2).out: $(SQL_dbDir)/$(1).db
+	mkdir -p $$(@D)
+	@$(SQL_startServer)
+	$(call SQL_runScripts,$(1),$$(filter %.sql,$$^)) -o$$@ || (cat $$@ && touch -dyesterday $$@ && exit 1)
+ $(SQL_dbDir)/$(1)/$(2).out_defined = 1
+ endif
+endef
+
+define SQL_runScripts =
+	@echo Running $(2) on $(1)
+	@for i in $(2); do cat $$$$i; echo "go"; done | $(SQL_sqsh) $(SQL_sqshFlags) -Lsemicolon_hack=0 -D"[$(1)]"
+endef
+
+define SQL_runCommand =
+	@echo Running \"$(2)\" on $(1)
+	@$(SQL_sqsh) $(SQL_sqshFlags) -Lsemicolon_hack=0 -C"\loop -e '$(2)'" -D"[$(1)]"
+endef
