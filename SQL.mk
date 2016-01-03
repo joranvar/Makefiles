@@ -44,3 +44,20 @@ define SQL_runCommand =
 	@echo Running \"$(2)\" on $(1)
 	@$(SQL_sqsh) $(SQL_sqshFlags) -Lsemicolon_hack=0 -C"\loop -e '$(2)'" -D"[$(1)]"
 endef
+
+
+### Default targets
+.PHONY: cleanall
+cleanall: SQL_clean
+
+.PHONY: SQL_clean
+SQL_clean: SQL_cleanoutput SQL_cleandb
+
+.PHONY: SQL_cleanoutput
+SQL_cleanoutput:
+	rm -f $(patsubst %_defined,%,$(filter $(SQL_dbDir)%.out_defined,$(.VARIABLES)))
+
+.PHONY: SQL_cleandb
+SQL_cleandb:
+	-$(foreach db,$(patsubst $(SQL_dbDir)/%.db_defined,%,$(filter %.db_defined,$(.VARIABLES))),$(call SQL_runCommand,master,DROP DATABASE [$(db)]))
+	rm -f $(patsubst %_defined,%,$(filter $(SQL_dbDir)%.db_defined,$(.VARIABLES)))
