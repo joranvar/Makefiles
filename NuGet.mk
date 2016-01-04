@@ -1,52 +1,60 @@
-CURL ?= env curl
-MONO ?= env mono
+MAKE_curl      ?= env curl
+MAKE_mono      ?= env mono
+MAKE_toolsDir  ?= tools
+NUGET_nugetDir ?= lib/NuGet
+NUGET_nuget    ?= $(MAKE_toolsDir)/nuget/NuGet.exe #
 
-NUGETDIR ?= lib/NuGet/
-TOOLSDIR ?= tools/
+ifndef NUGET_defined
 
-NUGET ?= $(TOOLSDIR)nuget/NuGet.exe
+### Functions
+define NUGET_mkNuGetTarget = # pkg_name[,version]
+$(eval $(call NUGET_mkNuGetRule,$(1),$(2)))$(NUGET_nugetDir)/$(1)/$(1).nupkg
+endef
 
-.PHONY: all
-all: install_nuget
+define NUGET_mkNuGetContentsTarget = # pkg_name,contents
+$(foreach contents,$(2),$(eval $(call NUGET_mkNuGetContentsRule,$(1),$(contents))))$(addprefix $(NUGET_nugetDir)/$(1)/,$(2))
+endef
 
-.PHONY: clean
-clean: nugetclean
-
-.PHONY: install_tools
-install_tools: install_nuget
-
-.PHONY: realclean
-realclean: clean_nuget
-
-.PHONY: install_nuget
-install_nuget: $(NUGET)
-
-.PHONY: clean_nuget
-ifndef nuget
-clean_nuget:
-	-$(RM) $(NUGET)
-
-$(NUGET): | $(dir $(NUGET))
-	$(CURL) -SsL https://www.nuget.org/nuget.exe -o $@
-
-.PHONY: nugetclean
-nugetclean:
-	$(RM) -r $(NUGETDIR)
-endif
-
-nuget = $(addprefix $(NUGETDIR)$(1)/,$(1).nupkg $(2))
-
-# Nuget dependency template
-%.nupkg: PKGNAME = $(basename $(word 1,$(subst /, ,$(subst $(NUGETDIR),,$@))))
-%.nupkg: VERSION = $(basename $(word 4,$(subst /, ,$(subst $(NUGETDIR),,$@))))
-%.nupkg: | $(NUGET)
-	-[ -d $(NUGETDIR)$(PKGNAME) ] || \
-		$(MONO) $(NUGET) install $(PKGNAME) \
+### Target templates
+define NUGET_mkNuGetTarget =
+ ifndef $(NUGET_nugetDir)/$(1)/$(1).nupkg_defined
+ $(NUGET_nugetDir)/$(1)/$(1).nupkg: $(NUGET_nuget)
+	mkdir -p $(NUGET_nugetDir)
+		$(MAKE_mono) $(NUGET_nuget) install $(1) \
 		-ExcludeVersion \
-		-OutputDirectory $(NUGETDIR) \
+		-OutputDirectory $(NUGET_nugetDir) \
 		-Verbosity quiet \
-		$(if $(VERSION),-Version $(VERSION))
+		$(if $(2),-Version $(2))
+ $(NUGET_nugetDir)/$(1)/$(1).nupkg_defined = 1
+ endif
+endef
 
-# How to make a directory
-%/:
-	mkdir -p $@
+define NUGET_mkNuGetContentsRule =
+ ifndef $(NUGET_nugetDir)/$(1)/$(2)_defined
+ $(NUGET_nugetDir)/$(1)/$(2): $(NUGET_nugetDir)/$(1)/$(1).nupkg
+ $(call NUGET_mkNuGetTarget,$(1))
+ $(NUGET_nugetDir)/$(1)/$(2)_defined = 1
+ endif
+endef
+
+$(NUGET_nuget):
+	mkdir -p $(@D)
+	$(MAKE_curl) -SsL https://www.nuget.org/nuget.exe -o $@
+
+### Default targets
+.PHONY: cleanall
+cleanall: NUGET_clean
+
+.PHONY: cleandeep
+cleandeep: NUGET_cleandeep
+
+.PHONY: NUGET_clean
+NUGET_clean:
+	rm -fr $(dir $(patsubst %_defined,%,$(filter %.nupkg_defined,$(.VARIABLES))))
+
+.PHONY: NUGET_cleandeep
+NUGET_cleandeep:
+	rm -f $(NUGET_nuget)
+
+NUGET_defined = 1
+endif
