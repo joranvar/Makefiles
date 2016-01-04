@@ -29,13 +29,20 @@ endef
 .PHONY: cleanall
 cleanall: TEST_clean
 
+.PHONY: cleandeep
+cleandeep: TEST_cleandeep
+
 .PHONY: TEST_clean
-TEST_clean: TEST_cleansuccess TEST_cleanexpected
+TEST_clean: TEST_cleansuccess
 
 .PHONY: TEST_cleansuccess
 TEST_cleansuccess:
 	rm -f $(patsubst %_defined,%,$(filter %.success_defined,$(.VARIABLES)))
 
-.PHONY: TEST_cleanexpected
-TEST_cleanexpected:
-	rm -f $(patsubst %.success_defined,%.expected,$(filter %.success_defined,$(.VARIABLES)))
+# Gold should not be deleted easily, most of the time it comes from an earlier iteration
+.PHONY: TEST_cleandeep
+TEST_cleandeep: TEST_cleangold
+
+.PHONY: TEST_cleangold
+TEST_cleangold:
+	rm -f $(patsubst %.success_defined,%.gold,$(filter %.success_defined,$(.VARIABLES)))
