@@ -3,11 +3,11 @@ TEST_testDir ?= test
 
 ### Functions
 define TEST_mkCompareTarget = # result[,expected]
-$(eval $(call TEST_mkCompareRule,$(1),$(or $(2),$(addprefix $(TEST_testDir)/,$(addsuffix .expected,$(1))))))$(TEST_testDir)/$(1).success
+$(eval $(call TEST_mkCompareRule,$(1),$(or $(2),$(TEST_testDir)/$(1).gold)))$(TEST_testDir)/$(1).success
 endef
 
 define TEST_mkGoldTarget = # compare_target
-$(1:.success=.gold)
+$(1:.success=.create_gold)
 endef
 
 ### Target templates
@@ -17,10 +17,10 @@ define TEST_mkCompareRule =
 	mkdir -p $$(@D)
 	$(TEST_diff) $(1) $(2) && touch $$@
 
- .PHONY: $(TEST_testDir)/$(1).gold
- $(TEST_testDir)/$(1).gold: $(1)
-	mkdir -p $(dir $(2))
-	cat $(1) > $(2)
+ .PHONY: $(TEST_testDir)/$(1).create_gold
+ $(TEST_testDir)/$(1).create_gold: $(1)
+	mkdir -p $$(@D)
+	cat $(1) > $$(patsubst %.create_gold,%.gold,$$@)
  $(TEST_testDir)/$(1).success_defined = 1
  endif
 endef
