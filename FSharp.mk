@@ -5,7 +5,7 @@ FSHARP_binDir   ?= $(MAKE_binDir)
 
 ### Functions
 define FSHARP_mkDllTarget = # dll_name
-$(FSHARP_binDir)/$(1)
+$(eval $(call FSHARP_mkDllRule,$(1)))$(FSHARP_binDir)/$(1)
 endef
 
 define FSHARP_mkScriptTarget = # script_name
@@ -13,10 +13,6 @@ $(eval $(call FSHARP_mkScriptRule,$(1)))$(FSHARP_binDir)/$(1).out
 endef
 
 ### Rules
-$(FSHARP_binDir)/%.dll: %.fs
-	mkdir -p $(@D)
-	$(FSHARP_fsc) $(filter-out $<,$(filter %.fs,$^)) $< $(addprefix -r:,$(filter %.dll,$^)) -o $@ -a --nologo
-
 $(FSHARP_binDir)/%.exe: %.fs
 	mkdir -p $(@D)
 	$(FSHARP_fsc) $(filter-out $<,$(filter %.fs,$^)) $< $(addprefix -r:,$(filter %.dll,$^)) -o $@ --nologo
@@ -24,6 +20,15 @@ $(FSHARP_binDir)/%.exe: %.fs
 	cp -u $(FSHARP_Core.dll) $(@D)
 
 ### Target templates
+define FSHARP_mkDllRule =
+ ifndef $(FSHARP_binDir)/$(1)_defined
+ $(FSHARP_binDir)/$(1):
+	mkdir -p $$(@D)
+	$(FSHARP_fsc) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
+ $(FSHARP_binDir)/$(1)_defined = 1
+ endif
+endef
+
 define FSHARP_mkScriptRule =
  ifndef $(FSHARP_binDir)/$(1).out_defined
  $(FSHARP_binDir)/$(1).out: $(1)
