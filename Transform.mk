@@ -7,7 +7,7 @@ $(eval $(call TRANSFORM_mkTransformedRule,$(1),$(2),$(3)))$(TRANSFORM_outDir)/$(
 endef
 
 define TRANSFORM_mkReplaceCmd = # from,to
-sed s/"$(1)"/"$(2)"/g
+sed s$$$$'\001'"$(1)"$$$$'\001'"$(2)"$$$$'\001'g
 endef
 
 ### Target templates
