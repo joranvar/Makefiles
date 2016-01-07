@@ -1,19 +1,34 @@
-TESTDIR ?= test/
+MAKE_mono      ?= env mono
+MAKE_toolsDir  ?= tools
+NUNIT_testDir  ?= test
 
-include Makefiles/NuGet.mk
+NUGET_nugetDir ?= lib/NuGet
+include $(MAKE_utilsDir)/NuGet.mk
 
-nunit.console = $(NUGETDIR)NUnit.Console/
-nunit.console.nupkg = NUnit.Console.nupkg
-nunit.console.runner = $(NUGETDIR)NUnit.Console/tools/nunit3-console.exe
+NUNIT_runner = $(call NUGET_mkNuGetContentsTarget,NUnit.Console,tools/nunit3-console.exe)
+NUNIT_NUGET  = $(call NUGET_mkNuGetContentsTarget,NUnit,lib/net45/nunit.framework.dll)
 
-.PHONY: nunit
-nunit: $(nunit.console.nupkg) unit | $(TESTDIR)
+### Functions
+define NUNIT_mkTestTarget = # test_assembly
+$(eval $(call NUNIT_mkTestRule,$(1)))$(NUNIT_testDir)/$(1).success
+endef
 
-$(nunit.console): $(nunit.console.nupkg)
-	mkdir -p $(TESTDIR)
+### Target templates
+define NUNIT_mkTestRule =
+ ifndef $(NUNIT_testDir)/$(1).success_NUNIT_defined
+ $(1): $(NUNIT_NUGET)
+ $(NUNIT_testDir)/$(1).success: $(1) $(NUNIT_runner)
+	mkdir -p $$(@D)
+	$(MAKE_mono) $(NUNIT_runner) $(1) --result=$$(@:.success=.last) && touch $$@ || (rm $$@ && exit 1)
+ $(NUNIT_testDir)/$(1).success_NUNIT_defined = 1
+ endif
+endef
 
-.PHONY: unit
-unit: $(addsuffix .success, $(UNITTESTS))
+### Default targets
+.PHONY: cleanall
+cleanall: NUNIT_clean
 
-%.dll.success: %.dll
-	$(MONO) $(nunit.console.runner) $? --result=$@
+.PHONY: NUNIT_clean
+NUNIT_clean:
+	$(call MAKE_clean,$(patsubst %_NUNIT_defined,%,$(filter %.success_NUNIT_defined,$(.VARIABLES))))
+	$(call MAKE_clean,$(patsubst %.success_NUNIT_defined,%.last,$(filter %.success_NUNIT_defined,$(.VARIABLES))))
