@@ -12,10 +12,18 @@ endef
 
 ### Target templates
 define TRANSFORM_mkTransformedRule =
- ifndef $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))_defined
+ ifndef $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))_TRANSFORM_defined
  $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1)): $(1)
 	mkdir -p $$(@D)
 	cat $$^ | $(3) > $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))
- $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))_defined = 1
+ $(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))_TRANSFORM_defined = 1
  endif
 endef
+
+### Default targets
+.PHONY: cleanall
+cleanall: TRANSFORM_clean
+
+.PHONY: TRANSFORM_clean
+TRANSFORM_clean:
+	rm -fr $(patsubst %_TRANSFORM_defined,%,$(filter $(TRANSFORM_outDir)/%_TRANSFORM_defined,$(.VARIABLES)))

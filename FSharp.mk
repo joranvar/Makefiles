@@ -52,6 +52,6 @@ cleanall: FSHARP_clean
 
 .PHONY: FSHARP_clean
 FSHARP_clean:
-	rm -fr $(FSHARP_binDir)/*.dll
-	rm -fr $(FSHARP_binDir)/*.exe
+	rm -fr $(patsubst %_FSHARP_exe_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_exe_defined,$(.VARIABLES)))
+	rm -fr $(patsubst %_FSHARP_dll_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_dll_defined,$(.VARIABLES)))
 	rm -fr $(patsubst %_defined,%,$(filter $(FSHARP_binDir)/%.out_defined,$(.VARIABLES)))
