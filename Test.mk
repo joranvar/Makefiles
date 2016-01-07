@@ -1,6 +1,8 @@
 TEST_diff    ?= env diff
 TEST_testDir ?= test
 
+include Makefiles/MakeUtils.mk
+
 ### Functions
 define TEST_mkCompareTarget = # result[,expected]
 $(eval $(call TEST_mkCompareRule,$(1),$(or $(2),$(TEST_testDir)/$(1).gold)))$(TEST_testDir)/$(1).success
@@ -37,7 +39,7 @@ TEST_clean: TEST_cleansuccess
 
 .PHONY: TEST_cleansuccess
 TEST_cleansuccess:
-	rm -f $(patsubst %_defined,%,$(filter %.success_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %_defined,%,$(filter %.success_defined,$(.VARIABLES))))
 
 # Gold should not be deleted easily, most of the time it comes from an earlier iteration
 .PHONY: TEST_cleandeep
@@ -45,4 +47,4 @@ TEST_cleandeep: TEST_cleangold
 
 .PHONY: TEST_cleangold
 TEST_cleangold:
-	rm -f $(patsubst %.success_defined,%.gold,$(filter %.success_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %.success_defined,%.gold,$(filter %.success_defined,$(.VARIABLES))))

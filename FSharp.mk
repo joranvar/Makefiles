@@ -3,6 +3,8 @@ FSHARP_fsi      ?= env fsharpi
 FSHARP_Core.dll ?= /nix/store/9nvx5380w2md40yzr63hbyh22aafsw4j-fsharp-3.1.2.5/lib/mono/4.5/FSharp.Core.dll
 FSHARP_binDir   ?= $(MAKE_binDir)
 
+include Makefiles/MakeUtils.mk
+
 ### Functions
 define FSHARP_mkDllTarget = # dll_name
 $(eval $(call FSHARP_mkDllRule,$(1)))$(FSHARP_binDir)/$(1)
@@ -52,6 +54,6 @@ cleanall: FSHARP_clean
 
 .PHONY: FSHARP_clean
 FSHARP_clean:
-	rm -fr $(patsubst %_FSHARP_exe_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_exe_defined,$(.VARIABLES)))
-	rm -fr $(patsubst %_FSHARP_dll_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_dll_defined,$(.VARIABLES)))
-	rm -fr $(patsubst %_defined,%,$(filter $(FSHARP_binDir)/%.out_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %_FSHARP_exe_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_exe_defined,$(.VARIABLES))))
+	$(call MAKE_clean,$(patsubst %_FSHARP_dll_defined,%,$(filter $(FSHARP_binDir)/%_FSHARP_dll_defined,$(.VARIABLES))))
+	$(call MAKE_clean,$(patsubst %_defined,%,$(filter $(FSHARP_binDir)/%.out_defined,$(.VARIABLES))))

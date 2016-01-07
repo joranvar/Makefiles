@@ -4,6 +4,8 @@ MAKE_toolsDir  ?= tools
 NUGET_nugetDir ?= lib/NuGet
 NUGET_nuget    ?= $(MAKE_toolsDir)/nuget/NuGet.exe #
 
+include Makefiles/MakeUtils.mk
+
 ifndef NUGET_defined
 
 ### Functions
@@ -54,7 +56,7 @@ NUGET_clean:
 
 .PHONY: NUGET_cleandeep
 NUGET_cleandeep:
-	rm -f $(NUGET_nuget)
+	$(call MAKE_clean,$(NUGET_nuget))
 
 NUGET_defined = 1
 endif

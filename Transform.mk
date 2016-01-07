@@ -1,6 +1,8 @@
 TRANSFORM_sed    ?= env sed
 TRANSFORM_outDir ?= $(MAKE_objDir)
 
+include Makefiles/MakeUtils.mk
+
 ### Functions
 define TRANSFORM_mkTransformedTarget = # input_name,pipe_name,pipe_cmd
 $(eval $(call TRANSFORM_mkTransformedRule,$(1),$(2),$(3)))$(TRANSFORM_outDir)/$(1).$(2).transformed$(suffix $(1))
@@ -26,4 +28,4 @@ cleanall: TRANSFORM_clean
 
 .PHONY: TRANSFORM_clean
 TRANSFORM_clean:
-	rm -fr $(patsubst %_TRANSFORM_defined,%,$(filter $(TRANSFORM_outDir)/%_TRANSFORM_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %_TRANSFORM_defined,%,$(filter $(TRANSFORM_outDir)/%_TRANSFORM_defined,$(.VARIABLES))))

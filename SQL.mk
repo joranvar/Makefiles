@@ -3,6 +3,8 @@ SQL_sqshFlags   ?= #      e.g. -S localhost:1433 -U sa -P vagrant -G 7.0
 SQL_dbDir       ?= db
 SQL_sqsh	?= env sqsh
 
+include Makefiles/MakeUtils.mk
+
 ### Functions
 define SQL_mkDatabaseTarget = # database_name
 $(eval $(call SQL_mkDatabaseRule,$(1)))$(SQL_dbDir)/$(1).db
@@ -55,9 +57,9 @@ SQL_clean: SQL_cleanoutput SQL_cleandb
 
 .PHONY: SQL_cleanoutput
 SQL_cleanoutput:
-	rm -f $(patsubst %_defined,%,$(filter $(SQL_dbDir)%.out_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %_defined,%,$(filter $(SQL_dbDir)%.out_defined,$(.VARIABLES))))
 
 .PHONY: SQL_cleandb
 SQL_cleandb:
 	-$(foreach db,$(patsubst $(SQL_dbDir)/%.db_defined,%,$(filter %.db_defined,$(.VARIABLES))),$(call SQL_runCommand,master,DROP DATABASE [$(db)]))
-	rm -f $(patsubst %_defined,%,$(filter $(SQL_dbDir)%.db_defined,$(.VARIABLES)))
+	$(call MAKE_clean,$(patsubst %_defined,%,$(filter $(SQL_dbDir)%.db_defined,$(.VARIABLES))))
