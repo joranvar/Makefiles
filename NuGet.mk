@@ -2,7 +2,7 @@ MAKE_curl      ?= env curl
 MAKE_mono      ?= env mono
 MAKE_toolsDir  ?= tools
 NUGET_nugetDir ?= lib/NuGet
-NUGET_nuget    ?= $(MAKE_toolsDir)/nuget/NuGet.exe #
+NUGET_nuget    ?= $(MAKE_toolsDir)/nuget/NuGet.exe
 
 include $(MAKE_utilsDir)/MakeUtils.mk
 
