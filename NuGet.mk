@@ -4,7 +4,7 @@ MAKE_toolsDir  ?= tools
 NUGET_nugetDir ?= lib/NuGet
 NUGET_nuget    ?= $(MAKE_toolsDir)/nuget/NuGet.exe #
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ifndef NUGET_defined
 

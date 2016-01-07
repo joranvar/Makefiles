@@ -2,7 +2,7 @@ CSHARP_mcs	  ?= env mcs
 CSHARP_System.dll ?= $(wildcard /nix/store/q3yf6a3ysjv0zgad9v2rb3rvllhih8l6-mono-4.0.3.20/lib/mono/4.5/Facades/*.dll)
 CSHARP_binDir	  ?= MAKE_binDir
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ### Functions
 define CSHARP_mkDllTarget = # dll_name

@@ -3,7 +3,7 @@ FSHARP_fsi      ?= env fsharpi
 FSHARP_Core.dll ?= /nix/store/9nvx5380w2md40yzr63hbyh22aafsw4j-fsharp-3.1.2.5/lib/mono/4.5/FSharp.Core.dll
 FSHARP_binDir   ?= $(MAKE_binDir)
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ### Functions
 define FSHARP_mkDllTarget = # dll_name

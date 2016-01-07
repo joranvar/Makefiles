@@ -1,7 +1,7 @@
 TRANSFORM_sed    ?= env sed
 TRANSFORM_outDir ?= $(MAKE_objDir)
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ### Functions
 define TRANSFORM_mkTransformedTarget = # input_name,pipe_name,pipe_cmd

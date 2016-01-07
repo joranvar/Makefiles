@@ -1,7 +1,7 @@
 TEST_diff    ?= env diff
 TEST_testDir ?= test
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ### Functions
 define TEST_mkCompareTarget = # result[,expected]

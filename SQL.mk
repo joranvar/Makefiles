@@ -3,7 +3,7 @@ SQL_sqshFlags   ?= #      e.g. -S localhost:1433 -U sa -P vagrant -G 7.0
 SQL_dbDir       ?= db
 SQL_sqsh	?= env sqsh
 
-include Makefiles/MakeUtils.mk
+include $(MAKE_utilsDir)/MakeUtils.mk
 
 ### Functions
 define SQL_mkDatabaseTarget = # database_name
