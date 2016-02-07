@@ -1,9 +1,11 @@
 FSHARP_fsc      ?= env fsharpc
 FSHARP_fsi      ?= env fsharpi
-FSHARP_Core.dll ?= /nix/store/9nvx5380w2md40yzr63hbyh22aafsw4j-fsharp-3.1.2.5/lib/mono/4.5/FSharp.Core.dll
 FSHARP_binDir   ?= $(MAKE_binDir)
 
 include $(MAKE_utilsDir)/MakeUtils.mk
+include $(MAKE_utilsDir)/NuGet.mk
+FSHARP_Core4 = $(call NUGET_mkNuGetTarget,FSharp.Core,4.0.0.1)
+FSHARP_Core.dll ?= $(call NUGET_mkNuGetContentsTarget,FSharp.Core,lib/net40/FSharp.Core.dll)
 
 ### Functions
 define FSHARP_mkDllTarget = # dll_name
@@ -30,7 +32,7 @@ endef
 
 define FSHARP_mkExeRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_exe_defined
- $(FSHARP_binDir)/$(1):
+ $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
 	$(FSHARP_fsc) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
