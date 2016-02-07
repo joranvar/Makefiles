@@ -18,7 +18,7 @@ $(foreach contents,$(2),$(eval $(call NUGET_mkNuGetContentsRule,$(1),$(contents)
 endef
 
 ### Target templates
-define NUGET_mkNuGetTarget =
+define NUGET_mkNuGetRule =
  ifndef $(NUGET_nugetDir)/$(1)/$(1).nupkg_defined
  $(NUGET_nugetDir)/$(1)/$(1).nupkg: $(NUGET_nuget)
 	mkdir -p $(NUGET_nugetDir)
@@ -34,7 +34,7 @@ endef
 define NUGET_mkNuGetContentsRule =
  ifndef $(NUGET_nugetDir)/$(1)/$(2)_defined
  $(NUGET_nugetDir)/$(1)/$(2): $(NUGET_nugetDir)/$(1)/$(1).nupkg
- $(call NUGET_mkNuGetTarget,$(1))
+ $(eval $(call NUGET_mkNuGetRule,$(1)))
  $(NUGET_nugetDir)/$(1)/$(2)_defined = 1
  endif
 endef
