@@ -19,7 +19,7 @@ define NUNIT_mkTestRule =
  $(1): $(NUNIT_NUGET)
  $(NUNIT_testDir)/$(1).success: $(1) $(NUNIT_runner)
 	mkdir -p $$(@D)
-	$(MAKE_mono) $(NUNIT_runner) $(1) --result=$$(@:.success=.last) && touch $$@ || (rm $$@ && exit 1)
+	$(MAKE_mono) $(NUNIT_runner) $(1) --noheader --result=$$(@:.success=.last) && touch $$@ || (rm $$@ && exit 1)
  $(NUNIT_testDir)/$(1).success_NUNIT_defined = 1
  endif
 endef
