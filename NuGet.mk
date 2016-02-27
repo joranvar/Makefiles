@@ -26,7 +26,7 @@ define NUGET_mkNuGetRule =
 		-ExcludeVersion \
 		-OutputDirectory $(NUGET_nugetDir) \
 		-Verbosity quiet \
-		$(if $(2),-Version $(2))
+		$(if $(2),-Version $(2)) && touch $$@
  $(NUGET_nugetDir)/$(1)/$(1).nupkg_defined = 1
  endif
 endef
