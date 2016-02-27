@@ -28,6 +28,7 @@ define FSHARP_mkDllRule =
 	mkdir -p $$(@D)
 	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
+	if [ '$$(filter %.so,$$^)x' != 'x' ]; then cp -u $$(filter %.so,$$^) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
  $(FSHARP_binDir)/$(1)_FSHARP_dll_defined = 1
  endif
@@ -39,6 +40,7 @@ define FSHARP_mkExeRule =
 	mkdir -p $$(@D)
 	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
+	if [ '$$(filter %.so,$$^)x' != 'x' ]; then cp -u $$(filter %.so,$$^) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
  $(FSHARP_binDir)/$(1)_FSHARP_exe_defined = 1
  endif
