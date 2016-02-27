@@ -23,9 +23,11 @@ endef
 ### Target templates
 define FSHARP_mkDllRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_dll_defined
- $(FSHARP_binDir)/$(1):
+ $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
 	$(FSHARP_fsc) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
+	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
+	cp -u $(FSHARP_Core.dll) $$(@D)
  $(FSHARP_binDir)/$(1)_FSHARP_dll_defined = 1
  endif
 endef
