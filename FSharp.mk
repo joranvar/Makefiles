@@ -1,6 +1,7 @@
 FSHARP_fsc      ?= env fsharpc
 FSHARP_fsi      ?= env fsharpi
 FSHARP_binDir   ?= $(MAKE_binDir)
+FSHARP_flags    ?=
 
 include $(MAKE_utilsDir)/MakeUtils.mk
 include $(MAKE_utilsDir)/NuGet.mk
@@ -25,7 +26,7 @@ define FSHARP_mkDllRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_dll_defined
  $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
-	$(FSHARP_fsc) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
+	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
  $(FSHARP_binDir)/$(1)_FSHARP_dll_defined = 1
@@ -36,7 +37,7 @@ define FSHARP_mkExeRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_exe_defined
  $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
-	$(FSHARP_fsc) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
+	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
  $(FSHARP_binDir)/$(1)_FSHARP_exe_defined = 1
