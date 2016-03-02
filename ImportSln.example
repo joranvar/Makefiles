@@ -1,0 +1,18 @@
+.PHONY: default
+default: all
+
+MAKE_toolsDir ?= tools
+MAKE_binDir   ?= bin
+MAKE_objDir   ?= obj
+MAKE_utilsDir ?= Makefiles
+
+include $(MAKE_utilsDir)/ImportSln.mk
+
+IMPORTED = $(call SLN_mkMkTarget,Imported.mk)
+
+$(IMPORTED): Example.sln
+
+include $(IMPORTED)
+
+.PHONY: clean
+clean: cleanall
