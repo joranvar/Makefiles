@@ -58,6 +58,10 @@ module File =
   let normalize : T -> T = absoluteTo currentDir >> toName >> System.IO.Path.GetFullPath >> ofName >> relativeTo currentDir
   let oneUp (T parts) : T = parts |> List.skip 1 |> T
 
+  let resuffix (suffix:string) (t:T) : T =
+    let file = ((file t |> toName |> String.split ["."] |> List.init')@[suffix]) |> String.concat "." |> ofName
+    dir t + file
+
   let isIn (dir:T) (t:T) = match relativeTo dir t with | T (".."::_) -> false | _ -> true
 
   let read (t:T) : string list option = try t |> toName |> System.IO.File.ReadAllLines |> Seq.toList |> Some with _ -> None
