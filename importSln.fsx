@@ -117,32 +117,26 @@ module Solution =
     let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine |> Option.map adjustPath
     { ProjectFiles = projects; NuGetRoot = nugetroot }
 
-let sources (proj:string) =
-  Project.ofFile (proj |> File.ofName |> File.absoluteTo File.currentDir)
-
-let projTo suff = String.split ["/"] >> List.last >> String.replace "fsproj" suff
+let projTo suff = File.resuffix suff
 
 fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> List.tryHead |> function
   | None -> stderr.WriteLine "Please provide a sln to import"; exit 1
   | Some sln ->
     let s = Solution.ofFile (File.ofName sln |> File.absoluteTo File.currentDir)
-    let prs =
-      s.ProjectFiles
-      |> List.map File.toName
-      |> List.map ( Tuple.mappend sources )
+    let prs = s.ProjectFiles |> List.map (Tuple.twice (id, File.absoluteTo File.currentDir >> Project.ofFile))
     let nugets = prs |> List.collect (fun p -> (snd p).Packages) |> List.distinct |> List.filter ((<>) "FSharp.Core") |> List.sortByDescending String.length
     let nugetroot = s.NuGetRoot |> Option.orDefault (File.currentDir + File.ofName "packages")
     stdout.WriteLine "# Assemblies (dll)"
     prs
     |> List.filter (fun p -> (snd p).OutputType = Project.Library)
-    |> List.iter (fun p -> (fst p) |> Tuple.twice (id, projTo "dll") |>
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "dll" >> File.toName) |>
                            Tuple.uncurry (sprintf "%s = $(call FSHARP_mkDllTarget,%s)") |>
                            stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Assemblies (exe)"
     prs
     |> List.filter (fun p -> (snd p).OutputType = Project.Exe)
-    |> List.iter (fun p -> (fst p) |> Tuple.twice (id, projTo "exe") |>
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "exe" >> File.toName) |>
                            Tuple.uncurry (sprintf "%s = $(call FSHARP_mkExeTarget,%s)") |>
                            stdout.WriteLine)
     stdout.WriteLine ""
@@ -151,28 +145,30 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (NuGet packages)"
     prs
-    |> List.iter (Tuple.second (fun p -> p.References
-                                         |> List.choose (function | (Project.File f) -> (if f |> File.isIn nugetroot then Some f else None) | _ -> None)
-                                         |> List.map (File.relativeTo nugetroot)
-                                         |> List.choose (fun f -> nugets |> List.tryPick (fun n -> if File.toName f |> String.startswith (n + ".") then Some (n, f) else None))
-                                         |> List.groupBy fst
-                                         |> List.map (Tuple.second (List.map (snd >> File.oneUp >> File.toName) >> String.concat " ") >> Tuple.uncurry (sprintf "$(call NUGET_mkNuGetContentsTarget,%s,%s)"))
-                                         |> String.concat " ") >>
+    |> List.iter (Tuple.map (File.toName,
+                             fun p ->
+                               p.References
+                               |> List.choose (function | (Project.File f) -> (if f |> File.isIn nugetroot then Some f else None) | _ -> None)
+                               |> List.map (File.relativeTo nugetroot)
+                               |> List.choose (fun f -> nugets |> List.tryPick (fun n -> if File.toName f |> String.startswith (n + ".") then Some (n, f) else None))
+                               |> List.groupBy fst
+                               |> List.map (Tuple.second (List.map (snd >> File.oneUp >> File.toName) >> String.concat " ") >> Tuple.uncurry (sprintf "$(call NUGET_mkNuGetContentsTarget,%s,%s)"))
+                               |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (source)"
     prs
-    |> List.iter (Tuple.second (fun p -> p.Sources |> List.map File.toName |> String.concat " ") >>
+    |> List.iter (Tuple.map (File.toName, fun p -> p.Sources |> List.map File.toName |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (projects)"
     prs
-    |> List.iter (Tuple.second (fun p -> p.References |> List.choose (function | (Project.Project p) -> p |> File.toName |> sprintf "$(%s)" |> Some | _ -> None) |> String.concat " ") >>
+    |> List.iter (Tuple.map (File.toName, fun p -> p.References |> List.choose (function | (Project.Project p) -> p |> File.toName |> sprintf "$(%s)" |> Some | _ -> None) |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine ".PHONY: all"
     stdout.Write "all: "
-    prs |> List.map (fst >> sprintf "$(%s)") |> String.concat " " |> stdout.WriteLine
+    prs |> List.map (fst >> File.toName >> sprintf "$(%s)") |> String.concat " " |> stdout.WriteLine
