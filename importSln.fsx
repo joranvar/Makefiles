@@ -19,7 +19,6 @@ module String =
   let removePrefix (prefix:string) (s:string) = if startswith prefix s then s.Substring (prefix.Length) else s
   let removeSuffix (suffix:string) (s:string) = if endswith suffix s then s.Substring (0, s.Length - suffix.Length) else s
 module Tuple =
-  let mappend f x = x, f x
   let create x y = x, y
   let uncurry f (x, y) = f x y
   let first f (x, y) = (f x, y)
