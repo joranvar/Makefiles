@@ -64,8 +64,6 @@ module Solution =
     let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine
     { ProjectFiles = projects; NuGetRoot = nugetroot }
 
-let projects sln = (Solution.ofFile (File.ofName sln)).ProjectFiles |> List.map File.toName
-
 type Dependency = | Source | Copy | NuGet | Project
 type Output = | Library | Exe
 type ProjectInfo = (Dependency * string) list * Output * Map<string, string list>
@@ -96,8 +94,10 @@ let projTo suff = String.split ["/"] >> List.last >> String.replace "fsproj" suf
 fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> List.tryHead |> function
   | None -> stderr.WriteLine "Please provide a sln to import"; exit 1
   | Some sln ->
+    let s = Solution.ofFile (File.ofName sln)
     let prs, hintmaps =
-      projects sln
+      s.ProjectFiles
+      |> List.map File.toName
       |> List.map ( Tuple.mappend sources )
       |> List.map (fun (pr, (sources, output, hintmap)) -> [(pr, (sources, output))], hintmap)
       |> List.reduce (Tuples.fmap (List.append, Map.fold (fun acc key values -> acc |> Map.appendToList key values)))
