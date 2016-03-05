@@ -38,11 +38,16 @@ module File =
       let rec go parts1 parts2 =
         match (parts1, parts2) with
           | [], [] -> []
-          | xs, ys -> xs
+          | xs, [] -> xs
           | x::xs, y::ys when x = y -> go xs ys
           | xs, ys -> xs |> List.append (ys |> List.map (cnst ".."))
       go parts1 parts2 |> T
-  let toName (T parts) : string = parts |> Array.ofList |> System.IO.Path.Combine
+  let toName (T parts) : string =
+    match parts with
+      | ""::_ -> ["/"]
+      | _ -> []
+    @ parts
+    |> Array.ofList |> System.IO.Path.Combine
   let ofName (name:string) : T = String.split ["/"; "\\"] name |> T
 
   let currentDir = System.Environment.CurrentDirectory |> ofName
