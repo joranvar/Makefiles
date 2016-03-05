@@ -34,6 +34,27 @@ let projects (sln:string) =
                   List.tryFind (String.endswith ".fsproj") )
   |> Seq.map (System.IO.Path.Combine << Array.append [|root|] << Array.ofList << String.split "\\")
   |> Seq.toList
+module File =
+  type T = T of string list with
+    static member (+) (T parts1, T parts2) = T (parts1 @ parts2)
+    static member (-) (T parts1, T parts2) =
+      let rec go parts1 parts2 =
+        match (parts1, parts2) with
+          | [], [] -> []
+          | xs, ys -> xs
+          | x::xs, y::ys when x = y -> go xs ys
+          | xs, ys -> xs |> List.append (ys |> List.map (cnst ".."))
+      go parts1 parts2 |> T
+  let toName (T parts) : string = parts |> Array.ofList |> System.IO.Path.Combine
+  let ofName (name:string) : T = String.split ["/"; "\\"] name |> T
+
+  let currentDir = System.Environment.CurrentDirectory |> ofName
+  let dir (t:T) : T = t |> toName |> System.IO.Path.GetDirectoryName |> ofName
+  let absoluteTo : T -> T -> T = (+)
+  let relativeTo : T -> T -> T = flip (-)
+
+  let read (t:T) : string list option = try t |> toName |> System.IO.File.ReadAllLines |> Seq.toList |> Some with _ -> None
+
 
 type Dependency = | Source | Copy | NuGet | Project
 type Output = | Library | Exe
