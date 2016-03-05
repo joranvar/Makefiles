@@ -26,14 +26,6 @@ module Map =
     let vs = m |> Map.tryFind k |> Option.orDefault [] |> List.append vs
     m |> Map.add k vs
 
-let projects (sln:string) =
-  let root = System.IO.Path.GetDirectoryName sln
-  System.IO.File.ReadLines sln
-  |> Seq.filter ( String.startswith "Project" )
-  |> Seq.choose ( String.split "\"" >>
-                  List.tryFind (String.endswith ".fsproj") )
-  |> Seq.map (System.IO.Path.Combine << Array.append [|root|] << Array.ofList << String.split "\\")
-  |> Seq.toList
 module File =
   type T = T of string list with
     static member (+) (T parts1, T parts2) = T (parts1 @ parts2)
@@ -55,6 +47,24 @@ module File =
 
   let read (t:T) : string list option = try t |> toName |> System.IO.File.ReadAllLines |> Seq.toList |> Some with _ -> None
 
+module Solution =
+  type T = { ProjectFiles: File.T list; NuGetRoot: File.T option }
+
+  let ofFile (f:File.T) : T =
+    let findProjects : string list -> File.T list =
+      List.filter ( String.startswith "Project" ) >>
+      List.choose ( String.split ["\""] >> List.tryFind (String.endswith ".fsproj") >> Option.map File.ofName )
+
+    let repoLine : string list -> File.T option =
+      List.filter ( String.contains "repositorypath" ) >>
+      List.tryPick ( String.split ["\""] >> List.tryItem 3 >> Option.map File.ofName )
+
+    let root = f |> File.dir
+    let projects = f |> File.read |> Option.map (findProjects >> List.map (File.absoluteTo root >> File.relativeTo File.currentDir)) |> Option.orDefault []
+    let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine
+    { ProjectFiles = projects; NuGetRoot = nugetroot }
+
+let projects sln = (Solution.ofFile (File.ofName sln)).ProjectFiles |> List.map File.toName
 
 type Dependency = | Source | Copy | NuGet | Project
 type Output = | Library | Exe
