@@ -8,6 +8,7 @@ module List =
     match l with
       | [] -> []
       | x::xs -> (l |> List.truncate n)::(by n xs)
+  let init'<'t> : 't list -> 't list = List.rev >> List.tail >> List.rev
 module String =
   let startswith (prefix:string) (s:string) = s.StartsWith prefix
   let endswith (suffix:string) (s:string) = s.EndsWith suffix
