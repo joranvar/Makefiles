@@ -54,6 +54,7 @@ module File =
   let dir (t:T) : T = t |> toName |> System.IO.Path.GetDirectoryName |> ofName
   let absoluteTo : T -> T -> T = (+)
   let relativeTo : T -> T -> T = flip (-)
+  let normalize : T -> T = absoluteTo currentDir >> toName >> System.IO.Path.GetFullPath >> ofName >> relativeTo currentDir
 
   let read (t:T) : string list option = try t |> toName |> System.IO.File.ReadAllLines |> Seq.toList |> Some with _ -> None
 
