@@ -61,7 +61,7 @@ module File =
 module Project =
   type OutputType = | Library | Exe
   type Reference = | File of File.T | Assembly of string | Project of File.T
-  type T = { OutputType: OutputType; Sources: File.T list; References: Reference list }
+  type T = { OutputType: OutputType; Sources: File.T list; References: Reference list; Packages: string list }
 
   type Line = | Compile of string | Include of string | Reference of string | ProjectReference of string | OutputType of string | HintPath of string
 
@@ -77,6 +77,8 @@ module Project =
         | s when String.startswith "<HintPath>" s -> s |> String.removePrefix "<HintPath>" |> String.removeSuffix "</HintPath>" |> HintPath |> Some
         | _ -> None
         )
+    let parsePackages : string list -> string list =
+      List.map String.trim >> List.filter (String.startswith "<package id") >> List.map (String.split ["\""] >> List.item 1)
 
     let root = f |> File.dir
     let adjustPath = File.absoluteTo root >> File.relativeTo File.currentDir >> File.normalize
@@ -85,8 +87,9 @@ module Project =
     let sources = lines |> List.choose (function | (Compile s) -> s |> File.ofName |> adjustPath |> Some | _ -> None)
     let projects = lines |> List.choose (function | (ProjectReference s) -> s |> File.ofName |> adjustPath |> Project |> Some | _ -> None)
     let references = lines |> List.by 2 |> List.choose (function | [(Reference s); (HintPath p)] -> p |> File.ofName |> adjustPath |> File |> Some | [(Reference s);_] | [(Reference s)] -> Assembly s |> Some | _ -> None)
+    let nugets = (root + File.ofName "packages.config") |> File.read |> Option.map (parsePackages) |> Option.orDefault []
 
-    { OutputType = outputtype; Sources = sources; References = projects@references }
+    { OutputType = outputtype; Sources = sources; References = projects@references; Packages = nugets }
 
 module Solution =
   type T = { ProjectFiles: File.T list; NuGetRoot: File.T option }
@@ -118,6 +121,7 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
       s.ProjectFiles
       |> List.map File.toName
       |> List.map ( Tuple.mappend sources )
+    let nugets = prs |> List.collect (fun p -> (snd p).Packages) |> List.distinct
     stdout.WriteLine "# Assemblies (dll)"
     prs
     |> List.filter (fun p -> (snd p).OutputType = Project.Library)
@@ -131,6 +135,9 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     |> List.iter (fun p -> (fst p) |> Tuple.twice (id, projTo "exe") |>
                            Tuple.uncurry (sprintf "%s = $(call FSHARP_mkExeTarget,%s)") |>
                            stdout.WriteLine)
+    stdout.WriteLine ""
+    stdout.WriteLine "# NuGet packages"
+    nugets |> List.iter (Tuple.twice (id, id) >> Tuple.uncurry (sprintf "%s_NuGet = $(call NUGET_mkNuGetTarget,%s)") >> stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (source)"
     prs
