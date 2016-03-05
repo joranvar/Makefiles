@@ -107,8 +107,9 @@ module Solution =
       List.tryPick ( String.split ["\""] >> List.tryItem 3 >> Option.map File.ofName )
 
     let root = f |> File.dir
-    let projects = f |> File.read |> Option.map (findProjects >> List.map (File.absoluteTo root >> File.relativeTo File.currentDir)) |> Option.orDefault []
-    let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine
+    let adjustPath = File.absoluteTo root >> File.relativeTo File.currentDir >> File.normalize
+    let projects = f |> File.read |> Option.map (findProjects >> List.map adjustPath) |> Option.orDefault []
+    let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine |> Option.map adjustPath
     { ProjectFiles = projects; NuGetRoot = nugetroot }
 
 let sources (proj:string) =
@@ -125,6 +126,7 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
       |> List.map File.toName
       |> List.map ( Tuple.mappend sources )
     let nugets = prs |> List.collect (fun p -> (snd p).Packages) |> List.distinct
+    let nugetroot = s.NuGetRoot |> Option.orDefault (File.currentDir + File.ofName "packages")
     stdout.WriteLine "# Assemblies (dll)"
     prs
     |> List.filter (fun p -> (snd p).OutputType = Project.Library)
@@ -141,6 +143,18 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine ""
     stdout.WriteLine "# NuGet packages"
     nugets |> List.iter (Tuple.twice (id, id) >> Tuple.uncurry (sprintf "%s_NuGet = $(call NUGET_mkNuGetTarget,%s)") >> stdout.WriteLine)
+    stdout.WriteLine ""
+    stdout.WriteLine "# Dependencies (NuGet packages)"
+    prs
+    |> List.iter (Tuple.second (fun p -> p.References
+                                         |> List.choose (function | (Project.File f) -> (if f |> File.isIn nugetroot then Some f else None) | _ -> None)
+                                         |> List.map (File.relativeTo nugetroot)
+                                         |> List.choose (fun f -> nugets |> List.tryPick (fun n -> if File.toName f |> String.startswith (n + ".") then Some (n, f) else None))
+                                         |> List.groupBy fst
+                                         |> List.map (Tuple.second (List.map (snd >> File.oneUp >> File.toName) >> String.concat " ") >> Tuple.uncurry (sprintf "$(call NUGET_mkNuGetContentsTarget,%s,%s)"))
+                                         |> String.concat " ") >>
+                  Tuple.uncurry (sprintf "$(%s): %s") >>
+                  stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (source)"
     prs
