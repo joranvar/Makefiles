@@ -10,8 +10,7 @@ MAKE_utilsDir ?= Makefiles
 include $(MAKE_utilsDir)/ImportSln.mk
 
 IMPORTED = $(call SLN_mkMkTarget,Imported.mk)
-
-$(IMPORTED): Example.sln
+$(IMPORTED): Example.sln $(shell find . -type f -name '*.fsproj')
 
 include $(IMPORTED)
 
