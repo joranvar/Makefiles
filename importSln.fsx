@@ -5,7 +5,7 @@ module Option =
 module String =
   let startswith (prefix:string) (s:string) = s.StartsWith prefix
   let endswith (suffix:string) (s:string) = s.EndsWith suffix
-  let split (splitter:string) (s:string) = s.Split ([|splitter|], System.StringSplitOptions.None) |> Array.toList
+  let split (splitters:string list) (s:string) = s.Split (splitters |> Array.ofList, System.StringSplitOptions.None) |> Array.toList
   let trim (s:string) = s.Trim ()
   let replace (find:string) (replacement:string) (s:string) = s.Replace (find, replacement)
   let contains (find:string) (s:string) = s.Contains find
@@ -42,14 +42,14 @@ type ProjectInfoLine = | Dependency of Dependency * string | OutputType of Outpu
 let sources (proj:string) : ProjectInfo =
   try
   let root = System.IO.Path.GetDirectoryName proj
-  let addRoot s = s |> String.split "\\" |> Array.ofList |> Array.append [|root|] |> System.IO.Path.Combine |> System.IO.Path.GetFullPath |> String.removePrefix (System.Environment.CurrentDirectory + "/")
+  let addRoot s = s |> String.split ["\\"] |> Array.ofList |> Array.append [|root|] |> System.IO.Path.Combine |> System.IO.Path.GetFullPath |> String.removePrefix (System.Environment.CurrentDirectory + "/")
   let lines =
     System.IO.File.ReadAllLines proj
     |> Seq.choose ( String.trim >> function
-                    | s when String.startswith "<Compile Include" s -> s |> String.split "\"" |> List.item 1 |> Tuple.create Source |> Dependency |> Some
-                    | s when String.startswith "<None Include" s -> s |> String.split "\"" |> List.item 1 |> Tuple.create Copy |> Dependency |> Some
-                    | s when String.startswith "<Reference Include" s -> s |> String.split "\"" |> List.item 1 |> Tuple.create NuGet |> Dependency |> Some
-                    | s when String.startswith "<ProjectReference Include" s -> s |> String.split "\"" |> List.item 1 |> Tuple.create Project |> Dependency |> Some
+                    | s when String.startswith "<Compile Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Source |> Dependency |> Some
+                    | s when String.startswith "<None Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Copy |> Dependency |> Some
+                    | s when String.startswith "<Reference Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create NuGet |> Dependency |> Some
+                    | s when String.startswith "<ProjectReference Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Project |> Dependency |> Some
                     | s when String.startswith "<OutputType" s -> s |> iif (String.contains "Library") Library Exe |> OutputType |> Some
                     | s when String.startswith "<HintPath>" s -> s |> String.removePrefix "<HintPath>" |> String.removeSuffix "</HintPath>" |> HintPath |> Some
                     | _ -> None
@@ -59,7 +59,7 @@ let sources (proj:string) : ProjectInfo =
   , lines |> Seq.choose (function HintPath s -> Some (addRoot s) | _ -> None) |> Seq.map (flip Tuple.create []) |> Map.ofSeq
   with e -> stderr.WriteLine (string e); [], Library, Map.empty
 
-let projTo suff = String.split "/" >> List.last >> String.replace "fsproj" suff
+let projTo suff = String.split ["/"] >> List.last >> String.replace "fsproj" suff
 
 fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> List.tryHead |> function
   | None -> stderr.WriteLine "Please provide a sln to import"; exit 1
