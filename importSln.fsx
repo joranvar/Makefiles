@@ -58,6 +58,36 @@ module File =
 
   let read (t:T) : string list option = try t |> toName |> System.IO.File.ReadAllLines |> Seq.toList |> Some with _ -> None
 
+module Project =
+  type OutputType = | Library | Exe
+  type Reference = | File of File.T | Assembly of string | Project of File.T
+  type T = { OutputType: OutputType; Sources: File.T list; References: Reference list }
+
+  type Line = | Compile of string | Include of string | Reference of string | ProjectReference of string | OutputType of string | HintPath of string
+
+  let ofFile (f:File.T) : T =
+    let parseLines : string list -> Line list =
+      List.choose (
+        String.trim >> function
+        | s when String.startswith "<Compile Include" s -> s |> String.split ["\""] |> List.item 1 |> Compile |> Some
+        | s when String.startswith "<None Include" s -> s |> String.split ["\""] |> List.item 1 |> Include |> Some
+        | s when String.startswith "<Reference Include" s -> s |> String.split ["\""] |> List.item 1 |> Reference |> Some
+        | s when String.startswith "<ProjectReference Include" s -> s |> String.split ["\""] |> List.item 1 |> ProjectReference |> Some
+        | s when String.startswith "<OutputType>" s -> s |> String.removePrefix "<OutputType>" |> String.removeSuffix "</OutputType>" |> OutputType |> Some
+        | s when String.startswith "<HintPath>" s -> s |> String.removePrefix "<HintPath>" |> String.removeSuffix "</HintPath>" |> HintPath |> Some
+        | _ -> None
+        )
+
+    let root = f |> File.dir
+    let adjustPath = File.absoluteTo root >> File.relativeTo File.currentDir >> File.normalize
+    let lines = f |> File.read |> Option.map (parseLines) |> Option.orDefault []
+    let outputtype = lines |> List.tryPick (function | (OutputType s) -> s |> iif ((=) "Library") Library Exe |> Some | _ -> None) |> Option.orDefault Library
+    let sources = lines |> List.choose (function | (Compile s) -> s |> File.ofName |> adjustPath |> Some | _ -> None)
+    let projects = lines |> List.choose (function | (ProjectReference s) -> s |> File.ofName |> adjustPath |> Project |> Some | _ -> None)
+    let references = lines |> List.by 2 |> List.choose (function | [(Reference s); (HintPath p)] -> p |> File.ofName |> adjustPath |> File |> Some | [(Reference s);_] | [(Reference s)] -> Assembly s |> Some | _ -> None)
+
+    { OutputType = outputtype; Sources = sources; References = projects@references }
+
 module Solution =
   type T = { ProjectFiles: File.T list; NuGetRoot: File.T option }
 
@@ -75,66 +105,42 @@ module Solution =
     let nugetroot = (root + (File.ofName "NuGet.config")) |> File.read |> Option.bind repoLine
     { ProjectFiles = projects; NuGetRoot = nugetroot }
 
-type Dependency = | Source | Copy | NuGet | Project
-type Output = | Library | Exe
-type ProjectInfo = (Dependency * string) list * Output * Map<string, string list>
-type ProjectInfoLine = | Dependency of Dependency * string | OutputType of Output | HintPath of string
-
-let sources (proj:string) : ProjectInfo =
-  try
-  let root = System.IO.Path.GetDirectoryName proj
-  let addRoot s = s |> String.split ["\\"] |> Array.ofList |> Array.append [|root|] |> System.IO.Path.Combine |> System.IO.Path.GetFullPath |> String.removePrefix (System.Environment.CurrentDirectory + "/")
-  let lines =
-    System.IO.File.ReadAllLines proj
-    |> Seq.choose ( String.trim >> function
-                    | s when String.startswith "<Compile Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Source |> Dependency |> Some
-                    | s when String.startswith "<None Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Copy |> Dependency |> Some
-                    | s when String.startswith "<Reference Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create NuGet |> Dependency |> Some
-                    | s when String.startswith "<ProjectReference Include" s -> s |> String.split ["\""] |> List.item 1 |> Tuple.create Project |> Dependency |> Some
-                    | s when String.startswith "<OutputType" s -> s |> iif (String.contains "Library") Library Exe |> OutputType |> Some
-                    | s when String.startswith "<HintPath>" s -> s |> String.removePrefix "<HintPath>" |> String.removeSuffix "</HintPath>" |> HintPath |> Some
-                    | _ -> None
-                  )
-  lines |> Seq.choose (function Dependency (NuGet, s) -> Some (NuGet, s) | Dependency (d, s) -> Some (d, addRoot s) | _ -> None) |> Seq.toList
-  , lines |> Seq.pick (function OutputType o -> Some o | _ -> None)
-  , lines |> Seq.choose (function HintPath s -> Some (addRoot s) | _ -> None) |> Seq.map (flip Tuple.create []) |> Map.ofSeq
-  with e -> stderr.WriteLine (string e); [], Library, Map.empty
+let sources (proj:string) =
+  Project.ofFile (proj |> File.ofName |> File.absoluteTo File.currentDir)
 
 let projTo suff = String.split ["/"] >> List.last >> String.replace "fsproj" suff
 
 fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> List.tryHead |> function
   | None -> stderr.WriteLine "Please provide a sln to import"; exit 1
   | Some sln ->
-    let s = Solution.ofFile (File.ofName sln)
-    let prs, hintmaps =
+    let s = Solution.ofFile (File.ofName sln |> File.absoluteTo File.currentDir)
+    let prs =
       s.ProjectFiles
       |> List.map File.toName
       |> List.map ( Tuple.mappend sources )
-      |> List.map (fun (pr, (sources, output, hintmap)) -> [(pr, (sources, output))], hintmap)
-      |> List.reduce (Tuples.fmap (List.append, Map.fold (fun acc key values -> acc |> Map.appendToList key values)))
     stdout.WriteLine "# Assemblies (dll)"
     prs
-    |> List.filter (snd >> snd >> (=) Library)
-    |> List.iter (fst >> Tuple.twice (id, projTo "dll") >>
-                  Tuple.uncurry (sprintf "%s = $(call FSHARP_mkDllTarget,%s)") >>
-                  stdout.WriteLine)
+    |> List.filter (fun p -> (snd p).OutputType = Project.Library)
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (id, projTo "dll") |>
+                           Tuple.uncurry (sprintf "%s = $(call FSHARP_mkDllTarget,%s)") |>
+                           stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Assemblies (exe)"
     prs
-    |> List.filter (snd >> snd >> (=) Exe)
-    |> List.iter (fst >> Tuple.twice (id, projTo "exe") >>
-                  Tuple.uncurry (sprintf "%s = $(call FSHARP_mkExeTarget,%s)") >>
-                  stdout.WriteLine)
+    |> List.filter (fun p -> (snd p).OutputType = Project.Exe)
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (id, projTo "exe") |>
+                           Tuple.uncurry (sprintf "%s = $(call FSHARP_mkExeTarget,%s)") |>
+                           stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (source)"
     prs
-    |> List.iter (Tuple.second (fst >> List.filter (fst >> (=) Source) >> List.map snd >> String.concat " ") >>
+    |> List.iter (Tuple.second (fun p -> p.Sources |> List.map File.toName |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (projects)"
     prs
-    |> List.iter (Tuple.second (fst >> List.filter (fst >> (=) Project) >> List.map (snd >> sprintf "$(%s)") >> String.concat " ") >>
+    |> List.iter (Tuple.second (fun p -> p.References |> List.choose (function | (Project.Project p) -> p |> File.toName |> sprintf "$(%s)" |> Some | _ -> None) |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
