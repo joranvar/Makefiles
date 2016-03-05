@@ -91,8 +91,8 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (projects)"
     prs
-    |> List.iter (Tuple.second (fst >> List.filter (fst >> (=) Project) >> List.map snd >> String.concat " ") >>
-                  Tuple.uncurry (sprintf "$(%s): $(%s)") >>
+    |> List.iter (Tuple.second (fst >> List.filter (fst >> (=) Project) >> List.map (snd >> sprintf "$(%s)") >> String.concat " ") >>
+                  Tuple.uncurry (sprintf "$(%s): %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine ".PHONY: all"
