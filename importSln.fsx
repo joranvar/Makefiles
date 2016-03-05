@@ -51,7 +51,7 @@ module File =
   let ofName (name:string) : T = String.split ["/"; "\\"] name |> T
 
   let currentDir = System.Environment.CurrentDirectory |> ofName
-  let dir (t:T) : T = t |> toName |> System.IO.Path.GetDirectoryName |> ofName
+  let dir (T parts) : T = parts |> List.init' |> T
   let absoluteTo : T -> T -> T = (+)
   let relativeTo : T -> T -> T = flip (-)
   let normalize : T -> T = absoluteTo currentDir >> toName >> System.IO.Path.GetFullPath >> ofName >> relativeTo currentDir
