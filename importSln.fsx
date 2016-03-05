@@ -1,5 +1,6 @@
 let iif f iftrue iffalse x = if f x then iftrue else iffalse
 let flip f x y = f y x
+let cnst x _ = x
 module Option =
   let orDefault d = function Some v -> v | None -> d
 module String =
