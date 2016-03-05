@@ -52,6 +52,7 @@ module File =
 
   let currentDir = System.Environment.CurrentDirectory |> ofName
   let dir (T parts) : T = parts |> List.init' |> T
+  let file (T parts) : T = parts |> List.last |> List.singleton |> T
   let absoluteTo : T -> T -> T = (+)
   let relativeTo : T -> T -> T = flip (-)
   let normalize : T -> T = absoluteTo currentDir >> toName >> System.IO.Path.GetFullPath >> ofName >> relativeTo currentDir
