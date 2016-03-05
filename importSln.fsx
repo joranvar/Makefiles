@@ -125,7 +125,7 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
       s.ProjectFiles
       |> List.map File.toName
       |> List.map ( Tuple.mappend sources )
-    let nugets = prs |> List.collect (fun p -> (snd p).Packages) |> List.distinct |> List.filter ((<>) "FSharp.Core")
+    let nugets = prs |> List.collect (fun p -> (snd p).Packages) |> List.distinct |> List.filter ((<>) "FSharp.Core") |> List.sortByDescending String.length
     let nugetroot = s.NuGetRoot |> Option.orDefault (File.currentDir + File.ofName "packages")
     stdout.WriteLine "# Assemblies (dll)"
     prs
