@@ -3,6 +3,11 @@ let flip f x y = f y x
 let cnst x _ = x
 module Option =
   let orDefault d = function Some v -> v | None -> d
+module List =
+  let rec by<'t> (n:int) (l:'t list) : 't list list =
+    match l with
+      | [] -> []
+      | x::xs -> (l |> List.truncate n)::(by n xs)
 module String =
   let startswith (prefix:string) (s:string) = s.StartsWith prefix
   let endswith (suffix:string) (s:string) = s.EndsWith suffix
