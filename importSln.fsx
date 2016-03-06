@@ -153,6 +153,7 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine "# NuGet packages"
     nugetcontents |> List.iter (Tuple.second (List.map (File.oneUp >> File.toName) >> String.concat " ") >>
                                 (fun (p,c) -> sprintf "%s_NuGet = $(call NUGET_mkNuGetContentsTarget,%s,%s)" p p c) >> stdout.WriteLine)
+    stdout.WriteLine "FSharp.Data.SqlClient_NuGet += $(call NUGET_mkNuGetContentsTarget,Microsoft.SqlServer.TransactSql.ScriptDom,lib/net40/Microsoft.SqlServer.TransactSql.ScriptDom.dll)" // Needed for Mono
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (NuGet packages)"
     prs
