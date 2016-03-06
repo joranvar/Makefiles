@@ -182,7 +182,7 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (references)"
     prs
-    |> List.iter (Tuple.map (File.toName, fun p -> p.References |> List.choose (function | (Project.Assembly a) -> a |> String.split [","] |> List.head |> sprintf "-r:%s" |> Some | _ -> None) |> List.filter ((<>) "-r:mscorlib") |> String.concat " ") >>
+    |> List.iter (Tuple.map (File.toName, fun p -> p.References |> List.choose (function | (Project.Assembly a) -> a |> String.split [","] |> List.head |> sprintf "-r:%s" |> Some | _ -> None) |> List.filter ((<>) "-r:mscorlib") |> List.filter ((<>) "-r:FSharp.Core") |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): FSHARP_flags += %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
