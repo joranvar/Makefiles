@@ -7,6 +7,12 @@ MAKE_binDir   ?= bin
 MAKE_objDir   ?= obj
 MAKE_utilsDir ?= Makefiles
 
+REMOTE_user    ?= username
+REMOTE_machine ?= machine
+REMOTE_passwd  ?= secret # or leave it out and set it as environment variable or use private key
+include $(MAKE_utilsDir)/Remote.mk
+FSHARP_fsc = $(call REMOTE_mkRemoteCall,C:/Program Files (x86)/Microsoft SDKs/F\#/4.0/Framework/v4.0/Fsc.exe,D:/Development/Satellite/)
+
 include $(MAKE_utilsDir)/ImportSln.mk
 
 IMPORTED = $(call SLN_mkMkTarget,Imported.mk)
