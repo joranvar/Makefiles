@@ -5,7 +5,7 @@ NUNIT_testDir  ?= test
 NUGET_nugetDir ?= lib/NuGet
 include $(MAKE_utilsDir)/NuGet.mk
 
-NUNIT_runner = $(call NUGET_mkNuGetContentsTarget,NUnit.Console,tools/nunit3-console.exe)
+NUNIT_runner = $(call NUGET_mkNuGetContentsTarget,NUnit.ConsoleRunner,tools/nunit3-console.exe)
 NUNIT_NUGET  = $(call NUGET_mkNuGetContentsTarget,NUnit,lib/net45/nunit.framework.dll)
 
 ### Functions
