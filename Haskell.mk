@@ -52,7 +52,7 @@ cleandeep: HASKELL_cleandeep
 
 .PHONY: HASKELL_clean
 HASKELL_clean:
-	$(call MAKE_clean,$(patsubst %_HASEKLL_defined,%,$(filter %_HASKELL_defined,$(.VARIABLES))))
+	$(call MAKE_clean,$(patsubst %_HASKELL_defined,%,$(filter %_HASKELL_defined,$(.VARIABLES))))
 
 .PHONY: HASKELL_cleandeep
 HASKELL_cleandeep:
