@@ -20,7 +20,9 @@ define HASKELL_mkHaskellRule =
 	mkdir -p $$(@D)
 	$$(call HASKELL_prepareNixShell,$(1),$$(filter %.cabalpkg,$$^))
 	$$(call HASKELL_callNixShell,ghc -Wall -o $$(@) --make $$(filter %.hs,$$^))
- $(HASKELL_nixShellDir)/default.nix:
+ $(HASKELL_nixShellDir)/default.nix: | $(MAKE_utilsDir)/default.nix
+	mkdir -p $$(@D)
+	cp $(MAKE_utilsDir)/default.nix $$(@)
  $(MAKE_binDir)/$(1)_HASKELL_defined = 1
  endif
 endef
