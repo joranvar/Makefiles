@@ -1,6 +1,7 @@
 MAKE_sed            ?= env sed
 MAKE_toolsDir       ?= tools
 HASKELL_nixShellDir ?= nix
+HASKELL_ghcFlags    ?= -threaded -Wall
 
 include $(MAKE_utilsDir)/MakeUtils.mk
 
@@ -19,7 +20,7 @@ define HASKELL_mkHaskellRule =
  $(MAKE_binDir)/$(1): $(HASKELL_nixShellDir)/$(1).nix
 	mkdir -p $$(@D)
 	$$(call HASKELL_prepareNixShell,$(1),$$(filter %.cabalpkg,$$^))
-	$$(call HASKELL_callNixShell,ghc -threaded -Wall -o $$(@) --make $$(filter %.hs,$$^))
+	$$(call HASKELL_callNixShell,ghc $(HASKELL_ghcFlags) -o $$(@) --make $$(filter %.hs,$$^))
  $(HASKELL_nixShellDir)/$(1).nix: | $(MAKE_utilsDir)/default.nix
 	mkdir -p $$(@D)
 	cp $(MAKE_utilsDir)/default.nix $$(@)
