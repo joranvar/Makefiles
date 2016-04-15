@@ -16,14 +16,15 @@ endef
 ### Target templates
 define HASKELL_mkHaskellRule =
  ifndef $(MAKE_binDir)/$(1)_HASKELL_defined
- $(MAKE_binDir)/$(1): $(HASKELL_nixShellDir)/default.nix
+ $(MAKE_binDir)/$(1): $(HASKELL_nixShellDir)/$(1).nix
 	mkdir -p $$(@D)
 	$$(call HASKELL_prepareNixShell,$(1),$$(filter %.cabalpkg,$$^))
 	$$(call HASKELL_callNixShell,ghc -threaded -Wall -o $$(@) --make $$(filter %.hs,$$^))
- $(HASKELL_nixShellDir)/default.nix: | $(MAKE_utilsDir)/default.nix
+ $(HASKELL_nixShellDir)/$(1).nix: | $(MAKE_utilsDir)/default.nix
 	mkdir -p $$(@D)
 	cp $(MAKE_utilsDir)/default.nix $$(@)
  $(MAKE_binDir)/$(1)_HASKELL_defined = 1
+ $(HASKELL_nixShellDir)/$(1).nix_defined = 1
  endif
 endef
 
@@ -36,9 +37,9 @@ define HASKELL_mkCabalDepRule =
 endef
 
 define HASKELL_prepareNixShell =
-	$(MAKE_sed) -e 's/#{deps}/$(notdir $(basename $(2)))/' $(HASKELL_nixShellDir)/default.nix > default.nix
-	$(MAKE_sed) -e 's/#{name}/$(notdir $(1))/' -i default.nix
-	cp $(MAKE_utilsDir)/shell.nix .
+	$(MAKE_sed) -e 's/#{deps}/$(notdir $(basename $(2)))/' $(HASKELL_nixShellDir)/$(1).nix > $(notdir $(1)).nix
+	$(MAKE_sed) -e 's/#{name}/$(notdir $(1))/' -i $(notdir $(1)).nix
+	$(MAKE_sed) -e 's/default.nix/$(notdir $(1)).nix/' $(MAKE_utilsDir)/shell.nix > ./shell.nix
 endef
 
 define HASKELL_callNixShell =
@@ -55,7 +56,3 @@ cleandeep: HASKELL_cleandeep
 .PHONY: HASKELL_clean
 HASKELL_clean:
 	$(call MAKE_clean,$(patsubst %_HASKELL_defined,%,$(filter %_HASKELL_defined,$(.VARIABLES))))
-
-.PHONY: HASKELL_cleandeep
-HASKELL_cleandeep:
-	rm -fr shell.nix default.nix
