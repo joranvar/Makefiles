@@ -186,6 +186,6 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
                   Tuple.uncurry (sprintf "$(%s): FSHARP_flags += %s") >>
                   stdout.WriteLine)
     stdout.WriteLine ""
-    stdout.WriteLine ".PHONY: all"
-    stdout.Write "all: "
+    stdout.WriteLine ".PHONY: imported"
+    stdout.Write "imported: "
     prs |> List.map (fst >> File.toName >> sprintf "$(%s)") |> String.concat " " |> stdout.WriteLine
