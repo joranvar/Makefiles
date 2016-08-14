@@ -19,7 +19,7 @@ define CSHARP_mkDllRule =
  ifndef $(CSHARP_binDir)/$(1)_CSHARP_dll_defined
  $(CSHARP_binDir)/$(1):
 	mkdir -p $$(@D)
-	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -t:library -pkg:dotnet
+	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -t:library -pkg:dotnet
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
  $(CSHARP_binDir)/$(1)_CSHARP_dll_defined = 1
  endif
@@ -29,7 +29,7 @@ define CSHARP_mkExeRule =
  ifndef $(CSHARP_binDir)/$(1)_CSHARP_exe_defined
  $(CSHARP_binDir)/$(1):
 	mkdir -p $$(@D)
-	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -pkg:dotnet
+	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -pkg:dotnet
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
 	cp -u $(CSHARP_System.dll) $$(@D)
  $(CSHARP_binDir)/$(1)_CSHARP_exe_defined = 1
