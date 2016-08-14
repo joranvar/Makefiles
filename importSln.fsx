@@ -104,7 +104,7 @@ module Solution =
   let ofFile (f:File.T) : T =
     let findProjects : string list -> File.T list =
       List.filter ( String.startswith "Project" ) >>
-      List.choose ( String.split ["\""] >> List.tryFind (String.endswith ".fsproj") >> Option.map File.ofName )
+      List.choose ( String.split ["\""] >> List.tryFind (String.endswith "sproj") >> Option.map File.ofName )
 
     let repoLine : string list -> File.T option =
       List.filter ( String.contains "repositorypath" ) >>
@@ -138,14 +138,24 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
 
     stdout.WriteLine "# Assemblies (dll)"
     prs
-    |> List.filter (fun p -> (snd p).OutputType = Project.Library)
+    |> List.filter (fun p -> (snd p).OutputType = Project.Library && (fst p) |> File.toName |> String.endswith ".csproj")
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "dll" >> File.toName) |>
+                           Tuple.uncurry (sprintf "%s = $(call CSHARP_mkDllTarget,%s)") |>
+                           stdout.WriteLine)
+    prs
+    |> List.filter (fun p -> (snd p).OutputType = Project.Library && (fst p) |> File.toName |> String.endswith ".fsproj")
     |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "dll" >> File.toName) |>
                            Tuple.uncurry (sprintf "%s = $(call FSHARP_mkDllTarget,%s)") |>
                            stdout.WriteLine)
     stdout.WriteLine ""
     stdout.WriteLine "# Assemblies (exe)"
     prs
-    |> List.filter (fun p -> (snd p).OutputType = Project.Exe)
+    |> List.filter (fun p -> (snd p).OutputType = Project.Exe && (fst p) |> File.toName |> String.endswith ".csproj")
+    |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "exe" >> File.toName) |>
+                           Tuple.uncurry (sprintf "%s = $(call CSHARP_mkExeTarget,%s)") |>
+                           stdout.WriteLine)
+    prs
+    |> List.filter (fun p -> (snd p).OutputType = Project.Exe && (fst p) |> File.toName |> String.endswith ".fsproj")
     |> List.iter (fun p -> (fst p) |> Tuple.twice (File.toName, projTo "exe" >> File.toName) |>
                            Tuple.uncurry (sprintf "%s = $(call FSHARP_mkExeTarget,%s)") |>
                            stdout.WriteLine)
@@ -182,6 +192,12 @@ fsi.CommandLineArgs |> Array.toList |> List.filter (String.endswith ".sln") |> L
     stdout.WriteLine ""
     stdout.WriteLine "# Dependencies (references)"
     prs
+    |> List.filter (fun p -> (fst p) |> File.toName |> String.endswith ".csproj")
+    |> List.iter (Tuple.map (File.toName, fun p -> p.References |> List.choose (function | (Project.Assembly a) -> a |> String.split [","] |> List.head |> sprintf "-r:%s" |> Some | _ -> None) |> List.filter ((<>) "-r:mscorlib") |> List.filter ((<>) "-r:FSharp.Core") |> String.concat " ") >>
+                  Tuple.uncurry (sprintf "$(%s): CSHARP_flags += %s") >>
+                  stdout.WriteLine)
+    prs
+    |> List.filter (fun p -> (fst p) |> File.toName |> String.endswith ".fsproj")
     |> List.iter (Tuple.map (File.toName, fun p -> p.References |> List.choose (function | (Project.Assembly a) -> a |> String.split [","] |> List.head |> sprintf "-r:%s" |> Some | _ -> None) |> List.filter ((<>) "-r:mscorlib") |> List.filter ((<>) "-r:FSharp.Core") |> String.concat " ") >>
                   Tuple.uncurry (sprintf "$(%s): FSHARP_flags += %s") >>
                   stdout.WriteLine)
