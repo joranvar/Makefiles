@@ -1,6 +1,7 @@
 CSHARP_mcs	  ?= env mcs
 CSHARP_System.dll ?= $(wildcard /nix/store/q3yf6a3ysjv0zgad9v2rb3rvllhih8l6-mono-4.0.3.20/lib/mono/4.5/Facades/*.dll)
 CSHARP_binDir	  ?= $(MAKE_binDir)
+CSHARP_flags      ?=
 
 include $(MAKE_utilsDir)/MakeUtils.mk
 
@@ -18,7 +19,7 @@ define CSHARP_mkDllRule =
  ifndef $(CSHARP_binDir)/$(1)_CSHARP_dll_defined
  $(CSHARP_binDir)/$(1):
 	mkdir -p $$(@D)
-	$(CSHARP_mcs) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -t:library -pkg:dotnet
+	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -t:library -pkg:dotnet
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
  $(CSHARP_binDir)/$(1)_CSHARP_dll_defined = 1
  endif
@@ -28,7 +29,7 @@ define CSHARP_mkExeRule =
  ifndef $(CSHARP_binDir)/$(1)_CSHARP_exe_defined
  $(CSHARP_binDir)/$(1):
 	mkdir -p $$(@D)
-	$(CSHARP_mcs) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -pkg:dotnet
+	$(CSHARP_mcs) $$(CSHARP_flags) $$(filter %.cs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -out:$$@ -pkg:dotnet
 	if [ '$$(filter %.dll,$$^)x' != 'x' ]; then cp -u $$(filter %.dll,$$^) $$(@D); fi
 	cp -u $(CSHARP_System.dll) $$(@D)
  $(CSHARP_binDir)/$(1)_CSHARP_exe_defined = 1
