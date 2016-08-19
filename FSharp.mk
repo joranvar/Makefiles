@@ -26,7 +26,8 @@ define FSHARP_mkDllRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_dll_defined
  $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
-	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
+	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.exe,$$^)) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ -a --nologo
+	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.exe,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.exe,$$^)) $$(@D); fi
 	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.dll,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.dll,$$^)) $$(@D); fi
 	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.so,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.so,$$^)) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
@@ -38,7 +39,8 @@ define FSHARP_mkExeRule =
  ifndef $(FSHARP_binDir)/$(1)_FSHARP_exe_defined
  $(FSHARP_binDir)/$(1): | $(FSHARP_Core4)
 	mkdir -p $$(@D)
-	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
+	$(FSHARP_fsc) $$(FSHARP_flags) $$(filter %.fs,$$^) $$(addprefix -r:,$$(filter %.exe,$$^)) $$(addprefix -r:,$$(filter %.dll,$$^)) -o $$@ --nologo
+	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.exe,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.exe,$$^)) $$(@D); fi
 	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.dll,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.dll,$$^)) $$(@D); fi
 	if [ '$$(filter-out $(FSHARP_binDir)%,$$(filter %.so,$$^))x' != 'x' ]; then cp -u $$(filter-out $(FSHARP_binDir)%,$$(filter %.so,$$^)) $$(@D); fi
 	cp -u $(FSHARP_Core.dll) $$(@D)
